@@ -114,8 +114,8 @@ function App() {
             value={texts.toBeParsed}
             onChange={(e) => handleSetTexts(e.target)}
             placeholder="Add text to count occurances"
-            minRows={18}
-            maxRows={18}
+            minRows={15}
+            maxRows={15}
           />
         </Panel>
         <Panel title="Keywords" containerClass="panel-right">
