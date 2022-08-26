@@ -1,57 +1,83 @@
 import { Dialog, DialogTitle, Typography } from "@mui/material";
 import { isEmpty } from "ramda";
+import ActionButton from "./ActionButton";
 
-const DialogComponent = ({ open, value, onClose }) => (
-  <Dialog
-    maxWidth="sm"
-    fullWidth
-    open={open}
-    onClose={onClose}
-    PaperProps={{ style: { backgroundColor: "#202124", color: "#e8eaed" } }}
-  >
-    <DialogTitle>Results</DialogTitle>
-    <div className="dialog-content" style={{ padding: "0 24px 24px 24px" }}>
-      <div style={{ textAlign: "left" }}>
-        {isEmpty(value) ? (
-          <Typography>No hits</Typography>
-        ) : (
-          <table style={{ width: "100%" }}>
-            <thead>
-              <tr>
-                <th>Word</th>
-                <th>Occurences</th>
-              </tr>
-            </thead>
-            <tbody>
-              {value &&
-                Object.entries(value)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([key, value]) => (
-                    <tr>
-                      <td>{key}</td>
-                      <td>{value}</td>
-                    </tr>
-                  ))}
-            </tbody>
-          </table>
-        )}
-        {/* <div
-          className="occurences-key"
+const DialogComponent = ({ open, value, onClose }) => {
+  const prepareData = (csv) =>
+    value &&
+    value.map(({ key, value, uniqueWords, uniqueWordsCSV }) => ({
+      key,
+      value,
+      uniqueWords: csv ? uniqueWordsCSV : uniqueWords,
+    }));
+
+  const tableData = prepareData();
+  const CSVData = prepareData(true);
+
+  return (
+    <Dialog
+      maxWidth="sm"
+      fullWidth
+      open={open}
+      onClose={onClose}
+      PaperProps={{ style: { backgroundColor: "#202124", color: "#e8eaed" } }}
+    >
+      <DialogTitle>
+        <div
           style={{
             display: "flex",
-            alignItems: "flex-end",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          <Typography variant="h6">{`${index + 1}. ${key}`}</Typography>
+          <Typography style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
+            Results
+          </Typography>
+          <ActionButton
+            label="Export to CSV"
+            variant="text"
+            CSV
+            data={CSVData}
+          />
         </div>
-        <Typography>{value}</Typography>
-      {/* ))} */}
+      </DialogTitle>
+      <div className="dialog-content" style={{ padding: "0 24px 24px 24px" }}>
+        <div style={{ textAlign: "left" }}>
+          {isEmpty(value) ? (
+            <Typography>No hits</Typography>
+          ) : (
+            <table style={{ width: "100%" }}>
+              <thead>
+                <tr>
+                  <th>Keyword</th>
+                  <th>Occurences</th>
+                  <th>Unique words</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableData &&
+                  tableData
+                    .sort((a, b) => b.value - a.value)
+                    .map((entry) => (
+                      <tr>
+                        <td>{entry.key}</td>
+                        <td>{entry.value}</td>
+                        <td>
+                          {entry.uniqueWords.map((w) => (
+                            <Typography style={{ whiteSpace: "pre-line" }}>
+                              {w}
+                            </Typography>
+                          ))}
+                        </td>
+                      </tr>
+                    ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
-    </div>
-  </Dialog>
-);
+    </Dialog>
+  );
+};
 
 export default DialogComponent;

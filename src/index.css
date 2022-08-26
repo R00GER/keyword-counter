@@ -9,6 +9,7 @@ body {
   max-height: 100%;
   max-width: 100%;
   background-color: #202124;
+  overflow-x: hidden;
 }
 
 ::-webkit-scrollbar {

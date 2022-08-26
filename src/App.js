@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import Keywords from "./Keywords";
 import DialogComponent from "./components/DialogComponent";
 import Panel from "./components/Panel";
-import RunButton from "./components/RunButton";
+import ActionButton from "./components/ActionButton";
 import { InputFieldWithActionIcon, TextAreaField } from "./components/Fields";
 import "./App.css";
 import AppBar from "./components/AppBar";
@@ -17,6 +17,7 @@ function App() {
   const [texts, setTexts] = useState({ toBeParsed: "", keyword: "" });
   const [keywords, setKeywords] = useState([]);
   const [occurences, setOccurences] = useState({ show: false, values: null });
+  const [isSentence, setIsSentence] = useState(false);
 
   useEffect(() => {
     const fromLocalStorage = JSON.parse(window.localStorage.getItem(user.id));
@@ -40,19 +41,49 @@ function App() {
       .toString()
       .toLowerCase()
       .replace(/\r\n/g, " ")
+      .replace(/\n/g, " ")
+      .replace(/\./g, "")
+      .replace(/\,/g, "")
       .split(" ");
 
-    const wordsFilteredByKeywords = words.filter((w) => {
-      return keywords.find((k) => w.includes(k));
-    });
+    const wordsFilteredByKeywords = words
+      .map((w) => {
+        const keyword = keywords.find((k) => w.trim().includes(k.trim()));
+        return keyword ? { keyword, w } : null;
+      })
+      .filter(Boolean);
 
-    const occurences = wordsFilteredByKeywords.reduce((acc, curr) => {
-      acc[curr] ? ++acc[curr] : (acc[curr] = 1);
-      return acc;
-    }, {});
+    const occurences =
+      wordsFilteredByKeywords &&
+      wordsFilteredByKeywords.reduce((acc, curr) => {
+        acc[curr.keyword] ? ++acc[curr.keyword] : (acc[curr.keyword] = 1);
+        return acc;
+      }, {});
+
+    const keywordsOccurencesWords =
+      occurences &&
+      Object.entries(occurences).map(([key, value]) => ({
+        key,
+        value,
+        uniqueWords: [
+          ...new Set(
+            wordsFilteredByKeywords
+              .filter((w) => w.keyword === key)
+              .map((obj) => obj.w)
+          ),
+        ],
+        uniqueWordsCSV: [
+          ...new Set(
+            wordsFilteredByKeywords
+              .filter((w) => w.keyword === key)
+              .map((obj) => obj.w)
+          ),
+        ].join("\r\n"),
+        words: wordsFilteredByKeywords.filter((w) => w.keyword === key),
+      }));
 
     if (occurences) {
-      setOccurences({ show: true, values: occurences });
+      setOccurences({ show: true, values: keywordsOccurencesWords });
     }
   }, [texts.toBeParsed, keywords]);
 
@@ -74,11 +105,15 @@ function App() {
 
   const handleSetKeywords = (word) => {
     if (word) {
+      console.log(word);
+      console.log(word.split(" "));
       const existing = keywords.find(
         (k) => k.toLowerCase() === word.toLowerCase()
       );
       if (!existing) {
-        setKeywords([...keywords, word]);
+        word.includes(" ") && !isSentence
+          ? setKeywords([...keywords, ...word.split(" ").filter(Boolean)])
+          : setKeywords([...keywords, word]);
 
         const toLocalStorage = {
           [user.id]: {
@@ -127,12 +162,37 @@ function App() {
             placeholder={keywordsEmpty ? "Add at least one keyword" : "Keyword"}
             autoComplete="off"
           />
-          <Keywords keywords={keywords} setKeywords={setKeywords} />
+          <Keywords
+            keywords={keywords}
+            setKeywords={setKeywords}
+            onChange={(v) => setIsSentence(v)}
+            checkboxValue={isSentence}
+          />
         </Panel>
-        <RunButton
-          onClick={getOccurences}
-          disabled={keywordsEmpty || !texts.toBeParsed}
-        />
+        <div
+          className="bottom"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: "1rem",
+            position: "fixed",
+            left: 0,
+            bottom: 0,
+            width: "100%",
+            margin: "1rem 0",
+          }}
+        >
+          <ActionButton
+            onClick={() => setKeywords([])}
+            disabled={keywordsEmpty}
+            label="Clear"
+          />
+          <ActionButton
+            onClick={getOccurences}
+            disabled={keywordsEmpty || !texts.toBeParsed}
+            label="Run"
+          />
+        </div>
         <DialogComponent
           open={occurences.show}
           value={occurences.values}
